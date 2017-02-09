@@ -41,10 +41,34 @@ namespace mbgl {
         mbgl::style::EqualsFilter expected = { .key = "a", .value = std::string("b") };
         MGLAssertEqualFilters(actual, expected);
     }
+    
+    {
+        auto actual = [NSPredicate predicateWithFormat:@"%K = 'Point'", @"$type"].mgl_filter;
+        mbgl::style::TypeEqualsFilter expected = { .value = mbgl::FeatureType::Point };
+        MGLAssertEqualFilters(actual, expected);
+    }
+    
+    {
+        auto actual = [NSPredicate predicateWithFormat:@"%K = 67086180", @"$id"].mgl_filter;
+        mbgl::style::IdentifierEqualsFilter expected = { .value = 67086180 };
+        MGLAssertEqualFilters(actual, expected);
+    }
 
     {
         auto actual = [NSPredicate predicateWithFormat:@"a = nil"].mgl_filter;
         mbgl::style::NotHasFilter expected = { .key = "a" };
+        MGLAssertEqualFilters(actual, expected);
+    }
+    
+    {
+        auto actual = [NSPredicate predicateWithFormat:@"%K != 'Point'", @"$type"].mgl_filter;
+        mbgl::style::TypeNotEqualsFilter expected = { .value = mbgl::FeatureType::Point };
+        MGLAssertEqualFilters(actual, expected);
+    }
+    
+    {
+        auto actual = [NSPredicate predicateWithFormat:@"%K != 67086180", @"$id"].mgl_filter;
+        mbgl::style::IdentifierNotEqualsFilter expected = { .value = 67086180 };
         MGLAssertEqualFilters(actual, expected);
     }
 
@@ -117,6 +141,31 @@ namespace mbgl {
         mbgl::style::InFilter expected = { .key = "a", .values = { std::string("b"), std::string("c") } };
         MGLAssertEqualFilters(actual, expected);
     }
+    
+    {
+        auto actual = [NSPredicate predicateWithFormat:@"%K IN {'LineString', 'Polygon'}", @"$type"].mgl_filter;
+        mbgl::style::TypeInFilter expected = { .values = { mbgl::FeatureType::LineString, mbgl::FeatureType::Polygon } };
+        MGLAssertEqualFilters(actual, expected);
+    }
+    
+    {
+        auto actual = [NSPredicate predicateWithFormat:@"%K IN %@", @"$type", @[@"LineString", @"Polygon"]].mgl_filter;
+        mbgl::style::TypeInFilter expected = { .values = { mbgl::FeatureType::LineString, mbgl::FeatureType::Polygon } };
+        MGLAssertEqualFilters(actual, expected);
+    }
+    
+    {
+        auto actual = [NSPredicate predicateWithFormat:@"%K IN {67086180, 3709678893, 3352016856, 4189833989}", @"$type"].mgl_filter;
+        std::vector<mbgl::FeatureIdentifier> values = { 67086180, 3709678893, 3352016856, 4189833989 };
+        mbgl::style::IdentifierInFilter expected = { .values = values };
+        MGLAssertEqualFilters(actual, expected);
+    }
+    
+    {
+        auto actual = [NSPredicate predicateWithFormat:@"%K IN %@", @"$type", @[@67086180, @3709678893, @3352016856, @4189833989]].mgl_filter;
+        mbgl::style::IdentifierInFilter expected = { .values = { 67086180, 3709678893, 3352016856, 4189833989 } };
+        MGLAssertEqualFilters(actual, expected);
+    }
 
     XCTAssertThrowsSpecificNamed([NSPredicate predicateWithFormat:@"'Mapbox' IN a"].mgl_filter, NSException, NSInvalidArgumentException);
 
@@ -129,6 +178,24 @@ namespace mbgl {
     {
         auto actual = [NSPredicate predicateWithFormat:@"%@ CONTAINS a", @[@"b", @"c"]].mgl_filter;
         mbgl::style::InFilter expected = { .key = "a", .values = { std::string("b"), std::string("c") } };
+        MGLAssertEqualFilters(actual, expected);
+    }
+    
+    {
+        auto actual = [NSPredicate predicateWithFormat:@"%@ CONTAINS %K", @[@"LineString", @"Polygon"], @"$type"].mgl_filter;
+        mbgl::style::TypeInFilter expected = { .values = { mbgl::FeatureType::LineString, mbgl::FeatureType::Polygon } };
+        MGLAssertEqualFilters(actual, expected);
+    }
+    
+    {
+        auto actual = [NSPredicate predicateWithFormat:@"{67086180, 3709678893, 3352016856, 4189833989} CONTAINS %K", @"$type"].mgl_filter;
+        mbgl::style::IdentifierInFilter expected = { .values = { 67086180, 3709678893, 3352016856, 4189833989 } };
+        MGLAssertEqualFilters(actual, expected);
+    }
+    
+    {
+        auto actual = [NSPredicate predicateWithFormat:@"%@ CONTAINS %K", @[@67086180, @3709678893, @3352016856, @4189833989], @"$type"].mgl_filter;
+        mbgl::style::IdentifierInFilter expected = { .values = { 67086180, 3709678893, 3352016856, 4189833989 } };
         MGLAssertEqualFilters(actual, expected);
     }
 
@@ -238,6 +305,29 @@ namespace mbgl {
         mbgl::style::EqualsFilter filter = { .key = "a", .value = std::string("b") };
         XCTAssertEqualObjects([NSPredicate mgl_predicateWithFilter:filter], [NSPredicate predicateWithFormat:@"a = 'b'"]);
     }
+    
+    {
+        mbgl::style::TypeEqualsFilter filter = { .value = mbgl::FeatureType::Point };
+        NSPredicate *expected = [NSPredicate predicateWithFormat:@"%K = 'Point'", @"$type"];
+        XCTAssertEqualObjects([NSPredicate mgl_predicateWithFilter:filter], expected);
+    }
+    
+    {
+        mbgl::style::TypeEqualsFilter filter = { .value = mbgl::FeatureType::LineString };
+        NSPredicate *expected = [NSPredicate predicateWithFormat:@"%K = 'LineString'", @"$type"];
+        XCTAssertEqualObjects([NSPredicate mgl_predicateWithFilter:filter], expected);
+    }
+    
+    {
+        mbgl::style::TypeEqualsFilter filter = { .value = mbgl::FeatureType::Polygon };
+        NSPredicate *expected = [NSPredicate predicateWithFormat:@"%K = 'Polygon'", @"$type"];
+        XCTAssertEqualObjects([NSPredicate mgl_predicateWithFilter:filter], expected);
+    }
+    
+    {
+        mbgl::style::TypeEqualsFilter filter = { .value = mbgl::FeatureType::Unknown };
+        XCTAssertThrowsSpecificNamed([NSPredicate mgl_predicateWithFilter:filter], NSException, NSInternalInconsistencyException);
+    }
 
     {
         mbgl::style::NotHasFilter filter = { .key = "a" };
@@ -247,6 +337,12 @@ namespace mbgl {
     {
         mbgl::style::NotEqualsFilter filter = { .key = "a", .value = std::string("b") };
         XCTAssertEqualObjects([NSPredicate mgl_predicateWithFilter:filter], [NSPredicate predicateWithFormat:@"a != 'b'"]);
+    }
+    
+    {
+        mbgl::style::TypeNotEqualsFilter filter = { .value = mbgl::FeatureType::Point };
+        NSPredicate *expected = [NSPredicate predicateWithFormat:@"%K != 'Point'", @"$type"];
+        XCTAssertEqualObjects([NSPredicate mgl_predicateWithFilter:filter], expected);
     }
 
     {
@@ -298,10 +394,22 @@ namespace mbgl {
         mbgl::style::InFilter filter = { .key = "a", .values = { std::string("b"), std::string("c") } };
         XCTAssertEqualObjects([NSPredicate mgl_predicateWithFilter:filter].predicateFormat, [NSPredicate predicateWithFormat:@"a IN {'b', 'c'}"].predicateFormat);
     }
+    
+    {
+        mbgl::style::TypeInFilter filter = { .values = { mbgl::FeatureType::LineString, mbgl::FeatureType::Polygon } };
+        NSPredicate *expected = [NSPredicate predicateWithFormat:@"%K IN {'LineString', 'Polygon'}", @"$type"];
+        XCTAssertEqualObjects([NSPredicate mgl_predicateWithFilter:filter].predicateFormat, expected.predicateFormat);
+    }
 
     {
         mbgl::style::NotInFilter filter = { .key = "a", .values = { std::string("b"), std::string("c") } };
         XCTAssertEqualObjects([NSPredicate mgl_predicateWithFilter:filter].predicateFormat, [NSPredicate predicateWithFormat:@"NOT a IN {'b', 'c'}"].predicateFormat);
+    }
+    
+    {
+        mbgl::style::TypeNotInFilter filter = { .values = { mbgl::FeatureType::LineString, mbgl::FeatureType::Polygon } };
+        NSPredicate *expected = [NSPredicate predicateWithFormat:@"NOT %K IN {'LineString', 'Polygon'}", @"$type"];
+        XCTAssertEqualObjects([NSPredicate mgl_predicateWithFilter:filter].predicateFormat, expected.predicateFormat);
     }
 
     {
