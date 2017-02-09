@@ -8,6 +8,8 @@ project     = QMapboxGL
 description = Mapbox Qt SDK
 language    = Cpp
 
+outputdir = docs
+
 headerdirs += include
 sourcedirs += src
 
