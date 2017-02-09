@@ -8,15 +8,20 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import com.mapbox.mapboxsdk.annotations.Marker;
 import com.mapbox.mapboxsdk.annotations.MarkerOptions;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
+import com.mapbox.mapboxsdk.maps.ResultListener;
 import com.mapbox.mapboxsdk.testapp.R;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.List;
+
+import timber.log.Timber;
 
 public class PressForMarkerActivity extends AppCompatActivity {
 
@@ -56,13 +61,23 @@ public class PressForMarkerActivity extends AppCompatActivity {
               .snippet(snippet);
 
             markerList.add(marker);
-            mapboxMap.addMarker(marker);
+            mapboxMap.addMarker(marker, new ResultListener<Marker>() {
+              @Override
+              public void onResult(Marker marker) {
+                Timber.i("Marker added");
+              }
+            });
           }
         });
 
         if (savedInstanceState != null) {
           markerList = savedInstanceState.getParcelableArrayList(STATE_MARKER_LIST);
-          mapboxMap.addMarkers(markerList);
+          mapboxMap.addMarkers(markerList, new ResultListener<List<Marker>>() {
+            @Override
+            public void onResult(List<Marker> markers) {
+              Timber.i("Markers added with size %d", markers.size());
+            }
+          });
         }
       }
     });

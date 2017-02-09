@@ -30,6 +30,7 @@ import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
+import com.mapbox.mapboxsdk.maps.ResultListener;
 import com.mapbox.mapboxsdk.testapp.R;
 import com.mapbox.mapboxsdk.testapp.utils.GeoParseUtil;
 
@@ -152,7 +153,12 @@ public class BulkMarkerActivity extends AppCompatActivity implements AdapterView
         .snippet(formatter.format(latLng.getLatitude()) + ", " + formatter.format(latLng.getLongitude())));
     }
 
-    mapboxMap.addMarkers(markerOptionsList);
+    mapboxMap.addMarkers(markerOptionsList, new ResultListener<List<Marker>>() {
+      @Override
+      public void onResult(List<Marker> markers) {
+        Timber.i("Markers added!");
+      }
+    });
   }
 
   @Override

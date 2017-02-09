@@ -15,7 +15,6 @@ import com.mapbox.mapboxsdk.annotations.Icon;
 import com.mapbox.mapboxsdk.annotations.IconFactory;
 import com.mapbox.mapboxsdk.annotations.Marker;
 import com.mapbox.mapboxsdk.annotations.MarkerView;
-import com.mapbox.mapboxsdk.annotations.MarkerViewManager;
 import com.mapbox.mapboxsdk.annotations.MarkerViewOptions;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.geometry.LatLng;
@@ -23,9 +22,10 @@ import com.mapbox.mapboxsdk.geometry.LatLngBounds;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
+import com.mapbox.mapboxsdk.maps.ResultListener;
 import com.mapbox.mapboxsdk.testapp.R;
-import com.mapbox.services.commons.models.Position;
 import com.mapbox.services.api.utils.turf.TurfMeasurement;
+import com.mapbox.services.commons.models.Position;
 
 import java.util.Random;
 
@@ -84,9 +84,14 @@ public class AnimatedMarkerActivity extends AppCompatActivity {
     if (passengerMarker == null) {
       Icon icon = IconFactory.getInstance(AnimatedMarkerActivity.this)
         .fromResource(R.drawable.ic_directions_run_black_24dp);
-      passengerMarker = mapboxMap.addMarker(new MarkerViewOptions()
+      mapboxMap.addMarker(new MarkerViewOptions()
         .position(randomLatLng)
-        .icon(icon));
+        .icon(icon), new ResultListener<MarkerView>() {
+        @Override
+        public void onResult(MarkerView markerView) {
+          passengerMarker = markerView;
+        }
+      });
     } else {
       passengerMarker.setPosition(randomLatLng);
     }
@@ -96,16 +101,14 @@ public class AnimatedMarkerActivity extends AppCompatActivity {
     LatLng randomLatLng = getLatLngInBounds();
 
     if (carMarker == null) {
-      carMarker = createCarMarker(randomLatLng, R.drawable.ic_taxi_top,
-        new MarkerViewManager.OnMarkerViewAddedListener() {
-          @Override
-          public void onViewAdded(@NonNull MarkerView markerView) {
-            // Make sure the car marker is selected so that it's always brought to the front (#5285)
-            mapboxMap.selectMarker(carMarker);
-            animateMoveToPassenger(carMarker);
-          }
-        });
-
+      createCarMarker(randomLatLng, R.drawable.ic_taxi_top, new ResultListener<MarkerView>() {
+        @Override
+        public void onResult(MarkerView markerView) {
+          carMarker = markerView;
+          mapboxMap.selectMarker(carMarker);
+          animateMoveToPassenger(carMarker);
+        }
+      });
     } else {
       carMarker.setPosition(randomLatLng);
     }
@@ -123,9 +126,9 @@ public class AnimatedMarkerActivity extends AppCompatActivity {
   }
 
   protected void addRandomCar() {
-    createCarMarker(getLatLngInBounds(), R.drawable.ic_car_top, new MarkerViewManager.OnMarkerViewAddedListener() {
+    createCarMarker(getLatLngInBounds(), R.drawable.ic_car_top, new ResultListener<MarkerView>() {
       @Override
-      public void onViewAdded(@NonNull MarkerView markerView) {
+      public void onResult(MarkerView markerView) {
         randomlyMoveMarker(markerView);
       }
     });
@@ -157,13 +160,13 @@ public class AnimatedMarkerActivity extends AppCompatActivity {
     return markerAnimator;
   }
 
-  private MarkerView createCarMarker(LatLng start, @DrawableRes int carResource,
-                                     MarkerViewManager.OnMarkerViewAddedListener listener) {
+  private void createCarMarker(LatLng start, @DrawableRes int carResource,
+                               ResultListener<MarkerView> listener) {
     Icon icon = IconFactory.getInstance(AnimatedMarkerActivity.this)
       .fromResource(carResource);
 
     // View Markers
-    return mapboxMap.addMarker(new MarkerViewOptions()
+    mapboxMap.addMarker(new MarkerViewOptions()
       .position(start)
       .icon(icon), listener);
 

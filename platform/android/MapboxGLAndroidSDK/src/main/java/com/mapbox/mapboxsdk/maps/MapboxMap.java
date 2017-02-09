@@ -2,17 +2,14 @@ package com.mapbox.mapboxsdk.maps;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.Camera;
 import android.graphics.PointF;
 import android.graphics.RectF;
 import android.location.Location;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.annotation.FloatRange;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.UiThread;
-import android.support.annotation.WorkerThread;
 import android.support.v4.util.Pools;
 import android.text.TextUtils;
 import android.view.View;
@@ -96,7 +93,7 @@ public final class MapboxMap {
     // Map configuration
     setDebugActive(options.getDebugActive());
     setApiBaseUrl(options);
-    setStyleUrl(options);
+    //setStyleUrl(options);
   }
 
   void onStart() {
@@ -152,7 +149,7 @@ public final class MapboxMap {
    */
   void onUpdate() {
     CameraPosition cameraPosition = transform.getCameraPosition();
-    if(cameraPosition!=null) {
+    if (cameraPosition != null) {
       uiSettings.update(cameraPosition);
       // FIXME introduce update method with camera position
       trackingSettings.update();
@@ -208,10 +205,22 @@ public final class MapboxMap {
     nativeMapView.setTransitionDelay(delay);
   }
 
-  @Nullable
   @UiThread
-  public Layer getLayer(@NonNull String layerId) {
-    return nativeMapView.getLayer(layerId);
+  public void getLayer(@NonNull final String layerId, final ResultListener<Layer> listener) {
+    mapState.queueRenderEvent(new State.NativeMapRunnable() {
+      @Override
+      public void execute(@NonNull NativeMapView nativeMapView) {
+        final Layer layer = nativeMapView.getLayer(layerId);
+        mapState.queueUiEvent(new Runnable() {
+          @Override
+          public void run() {
+            if (listener != null) {
+              listener.onResult(layer);
+            }
+          }
+        });
+      }
+    });
   }
 
   /**
@@ -221,16 +230,29 @@ public final class MapboxMap {
    * @param <T>     the generic attribute of a Layer
    * @return the casted Layer, null if another type
    */
-  @Nullable
   @UiThread
-  public <T extends Layer> T getLayerAs(@NonNull String layerId) {
-    try {
-      // noinspection unchecked
-      return (T) nativeMapView.getLayer(layerId);
-    } catch (ClassCastException exception) {
-      Timber.e(String.format("Layer: %s is a different type: %s", layerId, exception));
-      return null;
-    }
+  public void getLayerAs(@NonNull final String layerId, final ResultListener.LayerResultListener listener) {
+    mapState.queueRenderEvent(new State.NativeMapRunnable() {
+      @Override
+      public void execute(@NonNull NativeMapView nativeMapView) {
+        final Layer layer = nativeMapView.getLayer(layerId);
+        mapState.queueUiEvent(new Runnable() {
+          @Override
+          public void run() {
+            if (listener != null) {
+              try {
+                // noinspection unchecked
+                listener.onResult(layer);
+              } catch (ClassCastException exception) {
+                Timber.e(String.format("Layer: %s is a different type: %s", layerId, exception));
+                // noinspection unchecked
+                listener.onResult(null);
+              }
+            }
+          }
+        });
+      }
+    });
   }
 
   /**
@@ -250,9 +272,15 @@ public final class MapboxMap {
    * @param before the layer id to add this layer before
    */
   @UiThread
-  public void addLayer(@NonNull Layer layer, String before) {
-    nativeMapView.addLayer(layer, before);
+  public void addLayer(@NonNull final Layer layer, final String before) {
+    mapState.queueRenderEvent(new State.NativeMapRunnable() {
+      @Override
+      public void execute(@NonNull NativeMapView nativeMapView) {
+        nativeMapView.addLayer(layer, before);
+      }
+    });
   }
+
 
   /**
    * Removes the layer. Any references to the layer become invalid and should not be used anymore
@@ -261,8 +289,17 @@ public final class MapboxMap {
    * @throws NoSuchLayerException the exception thrown when layer with layerId doesn't exist
    */
   @UiThread
-  public void removeLayer(@NonNull String layerId) throws NoSuchLayerException {
-    nativeMapView.removeLayer(layerId);
+  public void removeLayer(@NonNull final String layerId) throws NoSuchLayerException {
+    mapState.queueRenderEvent(new State.NativeMapRunnable() {
+      @Override
+      public void execute(@NonNull NativeMapView nativeMapView) {
+        try {
+          nativeMapView.removeLayer(layerId);
+        } catch (NoSuchLayerException exception) {
+          // FIXME handle exception
+        }
+      }
+    });
   }
 
   /**
@@ -272,14 +309,33 @@ public final class MapboxMap {
    * @throws NoSuchLayerException the exeption thrown when the layer doesn't exist
    */
   @UiThread
-  public void removeLayer(@NonNull Layer layer) throws NoSuchLayerException {
-    nativeMapView.removeLayer(layer);
+  public void removeLayer(@NonNull final Layer layer) throws NoSuchLayerException {
+    mapState.queueRenderEvent(new State.NativeMapRunnable() {
+      @Override
+      public void execute(@NonNull NativeMapView nativeMapView) {
+        try {
+          nativeMapView.removeLayer(layer);
+        } catch (NoSuchLayerException exception) {
+          // FIXME handle exception
+        }
+      }
+    });
   }
 
-  @Nullable
   @UiThread
-  public Source getSource(@NonNull String sourceId) {
-    return nativeMapView.getSource(sourceId);
+  public void getSource(@NonNull final String sourceId, final ResultListener<Source> listener) {
+    mapState.queueRenderEvent(new State.NativeMapRunnable() {
+      @Override
+      public void execute(@NonNull NativeMapView nativeMapView) {
+        final Source source = nativeMapView.getSource(sourceId);
+        mapState.queueUiEvent(new Runnable() {
+          @Override
+          public void run() {
+            listener.onResult(source);
+          }
+        });
+      }
+    });
   }
 
   /**
@@ -289,16 +345,26 @@ public final class MapboxMap {
    * @param <T>      the generic type of a Source
    * @return the casted Source, null if another type
    */
-  @Nullable
   @UiThread
-  public <T extends Source> T getSourceAs(@NonNull String sourceId) {
-    try {
-      // noinspection unchecked
-      return (T) nativeMapView.getSource(sourceId);
-    } catch (ClassCastException exception) {
-      Timber.e(String.format("Source: %s is a different type: %s", sourceId, exception));
-      return null;
-    }
+  public void getSourceAs(@NonNull final String sourceId, final ResultListener.SourceResultListener listener) {
+    mapState.queueRenderEvent(new State.NativeMapRunnable() {
+      @Override
+      public void execute(@NonNull NativeMapView nativeMapView) {
+        final Source source = nativeMapView.getSource(sourceId);
+        mapState.queueUiEvent(new Runnable() {
+          @Override
+          public void run() {
+            try {
+              // noinspection unchecked
+              listener.onResult(source);
+            } catch (ClassCastException exception) {
+              Timber.e(String.format("Source: %s is a different type: %s", sourceId, exception));
+              listener.onResult(null);
+            }
+          }
+        });
+      }
+    });
   }
 
   /**
@@ -527,15 +593,10 @@ public final class MapboxMap {
    */
   @UiThread
   public final void moveCamera(final CameraUpdate update, final MapboxMap.CancelableCallback callback) {
-    new Handler().post(new Runnable() {
-      @Override
-      public void run() {
-        transform.moveCamera(MapboxMap.this, update, callback);
-        // MapChange.REGION_DID_CHANGE_ANIMATED is not called for `jumpTo`
-        // invalidate camera position to provide OnCameraChange event.
-        invalidateCameraPosition();
-      }
-    });
+    transform.moveCamera(MapboxMap.this, update, callback);
+    // MapChange.REGION_DID_CHANGE_ANIMATED is not called for `jumpTo`
+    // invalidate camera position to provide OnCameraChange event.
+    invalidateCameraPosition();
   }
 
   /**
@@ -633,12 +694,7 @@ public final class MapboxMap {
   @UiThread
   public final void easeCamera(final CameraUpdate update, final int durationMs, final boolean easingInterpolator,
                                final MapboxMap.CancelableCallback callback) {
-    new Handler().post(new Runnable() {
-      @Override
-      public void run() {
-        transform.easeCamera(MapboxMap.this, update, durationMs, easingInterpolator, callback);
-      }
-    });
+    transform.easeCamera(MapboxMap.this, update, durationMs, easingInterpolator, callback);
   }
 
   /**
@@ -709,12 +765,7 @@ public final class MapboxMap {
   @UiThread
   public final void animateCamera(final CameraUpdate update, final int durationMs,
                                   final MapboxMap.CancelableCallback callback) {
-    new Handler().post(new Runnable() {
-      @Override
-      public void run() {
-        transform.animateCamera(MapboxMap.this, update, durationMs, callback);
-      }
-    });
+    transform.animateCamera(MapboxMap.this, update, durationMs, callback);
   }
 
   /**
@@ -891,9 +942,52 @@ public final class MapboxMap {
    * @return The {@code Marker} that was added to the map.
    */
   @UiThread
-  @NonNull
-  public Marker addMarker(@NonNull MarkerOptions markerOptions) {
-    return annotationManager.addMarker(markerOptions, this);
+  public void addMarker(@NonNull MarkerOptions markerOptions) {
+    annotationManager.addMarker(markerOptions, this, null);
+  }
+
+  /**
+   * <p>
+   * Adds a marker to this map.
+   * </p>
+   * The marker's icon is rendered on the map at the location {@code Marker.position}.
+   * If {@code Marker.title} is defined, the map shows an info box with the marker's title and snippet.
+   *
+   * @param markerOptions A marker options object that defines how to render the marker.
+   * @return The {@code Marker} that was added to the map.
+   */
+  @UiThread
+  public void addMarker(@NonNull MarkerOptions markerOptions, @Nullable ResultListener<Marker> markerResultListener) {
+    annotationManager.addMarker(markerOptions, this, markerResultListener);
+  }
+
+
+  /**
+   * <p>
+   * Adds a marker to this map.
+   * </p>
+   * The marker's icon is rendered on the map at the location {@code Marker.position}.
+   * If {@code Marker.title} is defined, the map shows an info box with the marker's title and snippet.
+   *
+   * @param markerOptions A marker options object that defines how to render the marker.
+   */
+  @UiThread
+  public void addMarker(@NonNull BaseMarkerOptions markerOptions) {
+    annotationManager.addMarker(markerOptions, this, null);
+  }
+
+  /**
+   * <p>
+   * Adds a marker to this map.
+   * </p>
+   * The marker's icon is rendered on the map at the location {@code Marker.position}.
+   * If {@code Marker.title} is defined, the map shows an info box with the marker's title and snippet.
+   *
+   * @param markerOptions A marker options object that defines how to render the marker.
+   */
+  @UiThread
+  public void addMarker(@NonNull BaseMarkerOptions markerOptions, @Nullable ResultListener<Marker> markerResultListener) {
+    annotationManager.addMarker(markerOptions, this, markerResultListener);
   }
 
   /**
@@ -908,24 +1002,8 @@ public final class MapboxMap {
    */
   @UiThread
   @NonNull
-  public Marker addMarker(@NonNull BaseMarkerOptions markerOptions) {
-    return annotationManager.addMarker(markerOptions, this);
-  }
-
-  /**
-   * <p>
-   * Adds a marker to this map.
-   * </p>
-   * The marker's icon is rendered on the map at the location {@code Marker.position}.
-   * If {@code Marker.title} is defined, the map shows an info box with the marker's title and snippet.
-   *
-   * @param markerOptions A marker options object that defines how to render the marker.
-   * @return The {@code Marker} that was added to the map.
-   */
-  @UiThread
-  @NonNull
-  public MarkerView addMarker(@NonNull BaseMarkerViewOptions markerOptions) {
-    return annotationManager.addMarker(markerOptions, this, null);
+  public void addMarker(@NonNull BaseMarkerViewOptions markerOptions) {
+    annotationManager.addMarker(markerOptions, this, null);
   }
 
 
@@ -941,29 +1019,33 @@ public final class MapboxMap {
    * @return The {@code Marker} that was added to the map.
    */
   @UiThread
-  @NonNull
-  public MarkerView addMarker(@NonNull BaseMarkerViewOptions markerOptions,
-                              final MarkerViewManager.OnMarkerViewAddedListener onMarkerViewAddedListener) {
-    return annotationManager.addMarker(markerOptions, this, onMarkerViewAddedListener);
+  public void addMarker(@NonNull BaseMarkerViewOptions markerOptions,
+                        ResultListener<MarkerView> listener) {
+    annotationManager.addMarker(markerOptions, this, listener);
   }
 
   /**
    * FIXME javadoc
    */
   @UiThread
-  @NonNull
-  public List<MarkerView> addMarkerViews(@NonNull List<? extends
-    BaseMarkerViewOptions> markerViewOptions) {
-    return annotationManager.addMarkerViews(markerViewOptions, this);
+  public void addMarkerViews(@NonNull List<? extends BaseMarkerViewOptions> markerViewOptions) {
+    annotationManager.addMarkerViews(markerViewOptions, this, null);
   }
 
   /**
    * FIXME javadoc
    */
   @UiThread
-  @NonNull
-  public List<MarkerView> getMarkerViewsInRect(@NonNull RectF rect) {
-    return annotationManager.getMarkerViewsInRect(rect);
+  public void addMarkerViews(@NonNull List<? extends BaseMarkerViewOptions> markerViewOptions, ResultListener<List<MarkerView>> resultListener) {
+    annotationManager.addMarkerViews(markerViewOptions, this, resultListener);
+  }
+
+  /**
+   * FIXME javadoc
+   */
+  @UiThread
+  public void getMarkerViewsInRect(@NonNull RectF rect, ResultListener<List<MarkerView>> listener) {
+    annotationManager.getMarkerViewsInRect(rect, listener);
   }
 
   /**
@@ -977,10 +1059,9 @@ public final class MapboxMap {
    * @return A list of the {@code Marker}s that were added to the map.
    */
   @UiThread
-  @NonNull
-  public List<Marker> addMarkers(@NonNull List<? extends
-    BaseMarkerOptions> markerOptionsList) {
-    return annotationManager.addMarkers(markerOptionsList, this);
+  public void addMarkers(@NonNull List<? extends
+    BaseMarkerOptions> markerOptionsList, ResultListener<List<Marker>> listResultListener) {
+    annotationManager.addMarkers(markerOptionsList, this, listResultListener);
   }
 
   /**
@@ -1002,9 +1083,8 @@ public final class MapboxMap {
    * @return The {@code Polyine} that was added to the map.
    */
   @UiThread
-  @NonNull
-  public Polyline addPolyline(@NonNull PolylineOptions polylineOptions) {
-    return annotationManager.addPolyline(polylineOptions, this);
+  public void addPolyline(@NonNull PolylineOptions polylineOptions, ResultListener<Polyline> listener) {
+    annotationManager.addPolyline(polylineOptions, this, listener);
   }
 
   /**
@@ -1014,9 +1094,8 @@ public final class MapboxMap {
    * @return A list of the {@code Polyline}s that were added to the map.
    */
   @UiThread
-  @NonNull
-  public List<Polyline> addPolylines(@NonNull List<PolylineOptions> polylineOptionsList) {
-    return annotationManager.addPolylines(polylineOptionsList, this);
+  public void addPolylines(@NonNull List<PolylineOptions> polylineOptionsList, ResultListener<List<Polyline>> listener) {
+    annotationManager.addPolylines(polylineOptionsList, this, listener);
   }
 
   /**
@@ -1036,9 +1115,8 @@ public final class MapboxMap {
    * @return The {@code Polygon} that was added to the map.
    */
   @UiThread
-  @NonNull
-  public Polygon addPolygon(@NonNull PolygonOptions polygonOptions) {
-    return annotationManager.addPolygon(polygonOptions, this);
+  public void addPolygon(@NonNull PolygonOptions polygonOptions, ResultListener<Polygon> listener) {
+    annotationManager.addPolygon(polygonOptions, this, listener);
   }
 
   /**
@@ -1048,9 +1126,8 @@ public final class MapboxMap {
    * @return A list of the {@code Polygon}s that were added to the map.
    */
   @UiThread
-  @NonNull
-  public List<Polygon> addPolygons(@NonNull List<PolygonOptions> polygonOptionsList) {
-    return annotationManager.addPolygons(polygonOptionsList, this);
+  public void addPolygons(@NonNull List<PolygonOptions> polygonOptionsList, ResultListener<List<Polygon>> listener) {
+    annotationManager.addPolygons(polygonOptionsList, this, listener);
   }
 
 
@@ -1573,7 +1650,6 @@ public final class MapboxMap {
    * Takes a snapshot of the map.
    *
    * @param callback Callback method invoked when the snapshot is taken.
-   * @param bitmap   A pre-allocated bitmap.
    */
   @UiThread
   public void snapshot(@NonNull SnapshotReadyCallback callback) {

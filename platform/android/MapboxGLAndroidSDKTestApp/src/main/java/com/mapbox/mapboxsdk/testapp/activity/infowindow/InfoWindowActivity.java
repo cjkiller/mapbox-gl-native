@@ -13,6 +13,7 @@ import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
+import com.mapbox.mapboxsdk.maps.ResultListener;
 import com.mapbox.mapboxsdk.testapp.R;
 
 import java.text.DecimalFormat;
@@ -58,15 +59,17 @@ public class InfoWindowActivity extends AppCompatActivity
 
     mapboxMap.addMarker(new MarkerOptions().snippet("Lafayette Square").position(new LatLng(38.89949, -77.03656)));
 
-    Marker marker = mapboxMap.addMarker(new MarkerOptions()
+    mapboxMap.addMarker(new MarkerOptions()
       .title("White House")
       .snippet("The official residence and principal workplace of the President of the United States, "
         + "located at 1600 Pennsylvania Avenue NW in Washington, D.C. It has been the residence of every"
         + "U.S. president since John Adams in 1800.")
-      .position(new LatLng(38.897705003219784, -77.03655168667463)));
-
-    // open InfoWindow at startup
-    mapboxMap.selectMarker(marker);
+      .position(new LatLng(38.897705003219784, -77.03655168667463)), new ResultListener<Marker>() {
+      @Override
+      public void onResult(Marker marker) {
+        mapboxMap.selectMarker(marker);
+      }
+    });
   }
 
   private void addInfoWindowListeners() {
@@ -111,11 +114,16 @@ public class InfoWindowActivity extends AppCompatActivity
     }
 
     // Add marker on long click location with default marker image
-    customMarker = mapboxMap.addMarker(new MarkerOptions()
+    mapboxMap.addMarker(new MarkerOptions()
       .title("Custom Marker")
       .snippet(new DecimalFormat("#.#####").format(point.getLatitude()) + ", "
         + new DecimalFormat("#.#####").format(point.getLongitude()))
-      .position(point));
+      .position(point), new ResultListener<Marker>() {
+      @Override
+      public void onResult(Marker marker) {
+        customMarker = marker;
+      }
+    });
   }
 
   @Override

@@ -13,6 +13,7 @@ import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
+import com.mapbox.mapboxsdk.maps.ResultListener;
 import com.mapbox.mapboxsdk.testapp.R;
 
 import timber.log.Timber;
@@ -93,8 +94,13 @@ public class AddRemoveMarkerActivity extends AppCompatActivity {
       Timber.e("active marker is null");
     }
 
-    activeMarker = mapboxMap.addMarker(lowThresholdMarker);
-    Timber.d("showLowThresholdMarker() " + activeMarker.getId());
+    mapboxMap.addMarker(lowThresholdMarker, new ResultListener<Marker>() {
+      @Override
+      public void onResult(Marker marker) {
+        activeMarker = marker;
+        Timber.d("showLowThresholdMarker() " + activeMarker.getId());
+      }
+    });
   }
 
   private void showHighThresholdMarker() {
@@ -112,8 +118,13 @@ public class AddRemoveMarkerActivity extends AppCompatActivity {
       Timber.e("active marker is null");
     }
 
-    activeMarker = mapboxMap.addMarker(highThresholdMarker);
-    Timber.d("showHighThresholdMarker() " + activeMarker.getId());
+    mapboxMap.addMarker(highThresholdMarker, new ResultListener<Marker>() {
+      @Override
+      public void onResult(Marker marker) {
+        activeMarker = marker;
+        Timber.d("showHighThresholdMarker() " + activeMarker.getId());
+      }
+    });
   }
 
   @Override

@@ -8,7 +8,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.Canvas;
 import android.graphics.PointF;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -49,9 +48,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -212,7 +208,7 @@ public class MapView extends FrameLayout {
     TrackingSettings trackingSettings = new TrackingSettings(myLocationView, uiSettings, focalPoint, zoomInvalidator);
     MyLocationViewSettings myLocationViewSettings = new MyLocationViewSettings(myLocationView, proj, focalPoint);
     MarkerViewManager markerViewManager = new MarkerViewManager((ViewGroup) findViewById(R.id.markerViewContainer));
-    AnnotationManager annotations = new AnnotationManager(nativeMapView, this, markerViewManager);
+    AnnotationManager annotations = new AnnotationManager(nativeMapView, glSurfaceView, this, markerViewManager);
     Transform transform = new Transform(glSurfaceView, nativeMapView, annotations.getMarkerViewManager(), trackingSettings);
     mapboxMap = new MapboxMap(nativeMapView, mapState, transform, uiSettings, trackingSettings, myLocationViewSettings, proj,
       registerTouchListener, annotations);

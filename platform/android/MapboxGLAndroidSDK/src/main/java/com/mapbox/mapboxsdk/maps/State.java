@@ -14,7 +14,7 @@ public abstract class State {
     this.glSurfaceView = glSurfaceView;
   }
 
-  void queueRenderEvent(final NativeMapRunnable nativeMapRunnable){
+  public void queueRenderEvent(final NativeMapRunnable nativeMapRunnable) {
     glSurfaceView.queueEvent(new Runnable() {
       @Override
       public void run() {
@@ -23,11 +23,11 @@ public abstract class State {
     });
   }
 
-  void queueUiEvent(Runnable runnable){
+  public void queueUiEvent(Runnable runnable) {
     glSurfaceView.post(runnable);
   }
 
-  NativeMapView getNativeMapView(){
+  NativeMapView getNativeMapView() {
     return nativeMapView;
   }
 

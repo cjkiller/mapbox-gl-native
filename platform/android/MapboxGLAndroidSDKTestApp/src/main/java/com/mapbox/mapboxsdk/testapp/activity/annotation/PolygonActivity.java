@@ -15,6 +15,7 @@ import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.MapboxMapOptions;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
+import com.mapbox.mapboxsdk.maps.ResultListener;
 import com.mapbox.mapboxsdk.testapp.R;
 
 import java.util.ArrayList;
@@ -72,9 +73,14 @@ public class PolygonActivity extends AppCompatActivity implements OnMapReadyCall
   @Override
   public void onMapReady(MapboxMap map) {
     mapboxMap = map;
-    polygon = mapboxMap.addPolygon(new PolygonOptions()
+    mapboxMap.addPolygon(new PolygonOptions()
       .addAll(STAR_SHAPE_POINTS)
-      .fillColor(BLUE_COLOR));
+      .fillColor(BLUE_COLOR), new ResultListener<Polygon>() {
+      @Override
+      public void onResult(Polygon polygon) {
+        PolygonActivity.this.polygon = polygon;
+      }
+    });
   }
 
   @Override

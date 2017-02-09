@@ -3,6 +3,7 @@ package com.mapbox.mapboxsdk.testapp.activity.camera;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 
+import com.mapbox.mapboxsdk.annotations.Marker;
 import com.mapbox.mapboxsdk.annotations.MarkerOptions;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
 import com.mapbox.mapboxsdk.constants.Style;
@@ -11,6 +12,7 @@ import com.mapbox.mapboxsdk.geometry.LatLngBounds;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
+import com.mapbox.mapboxsdk.maps.ResultListener;
 import com.mapbox.mapboxsdk.maps.UiSettings;
 import com.mapbox.mapboxsdk.testapp.R;
 
@@ -47,12 +49,22 @@ public class LatLngBoundsActivity extends AppCompatActivity implements OnMapRead
     mapboxMap.addMarker(new MarkerOptions()
       .title("Los Angeles")
       .snippet("City Hall")
-      .position(LOS_ANGELES));
+      .position(LOS_ANGELES), new ResultListener<Marker>() {
+      @Override
+      public void onResult(Marker marker) {
+        Timber.i("Marker added", marker);
+      }
+    });
 
     mapboxMap.addMarker(new MarkerOptions()
       .title("New York")
       .snippet("City Hall")
-      .position(NEW_YORK));
+      .position(NEW_YORK), new ResultListener<Marker>() {
+      @Override
+      public void onResult(Marker marker) {
+        Timber.i("Marker added", marker);
+      }
+    });
 
     List<LatLng> points = new ArrayList<>();
     points.add(NEW_YORK);

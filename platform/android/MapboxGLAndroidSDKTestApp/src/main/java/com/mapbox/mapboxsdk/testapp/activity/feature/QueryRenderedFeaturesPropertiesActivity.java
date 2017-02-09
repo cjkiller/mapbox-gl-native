@@ -18,6 +18,7 @@ import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
+import com.mapbox.mapboxsdk.maps.ResultListener;
 import com.mapbox.mapboxsdk.testapp.R;
 import com.mapbox.services.commons.geojson.Feature;
 
@@ -74,8 +75,12 @@ public class QueryRenderedFeaturesPropertiesActivity extends AppCompatActivity {
             }
 
             // Add a marker on the clicked point
-            marker = mapboxMap.addMarker(new CustomMarkerOptions().position(point).features(features));
-            mapboxMap.selectMarker(marker);
+            mapboxMap.addMarker(new CustomMarkerOptions().position(point).features(features), new ResultListener<Marker>() {
+              @Override
+              public void onResult(Marker marker) {
+                mapboxMap.selectMarker(marker);
+              }
+            });
           }
         });
       }

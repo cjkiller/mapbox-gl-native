@@ -16,6 +16,7 @@ import com.mapbox.mapboxsdk.R;
 import com.mapbox.mapboxsdk.constants.MapboxConstants;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
+import com.mapbox.mapboxsdk.maps.ResultListener;
 import com.mapbox.mapboxsdk.utils.AnimatorUtils;
 
 import java.util.ArrayList;
@@ -452,75 +453,79 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
    */
   public void invalidateViewMarkersInVisibleRegion() {
     RectF mapViewRect = new RectF(0, 0, markerViewContainer.getWidth(), markerViewContainer.getHeight());
-    List<MarkerView> markers = mapboxMap.getMarkerViewsInRect(mapViewRect);
-    View convertView;
+    mapboxMap.getMarkerViewsInRect(mapViewRect, new ResultListener<List<MarkerView>>() {
+      @Override
+      public void onResult(List<MarkerView> markers) {
+        View convertView;
 
-    // remove old markers
-    Iterator<MarkerView> iterator = markerViewMap.keySet().iterator();
-    while (iterator.hasNext()) {
-      MarkerView marker = iterator.next();
-      if (!markers.contains(marker)) {
-        // remove marker
-        convertView = markerViewMap.get(marker);
-        for (MapboxMap.MarkerViewAdapter adapter : markerViewAdapters) {
-          if (adapter.getMarkerClass().equals(marker.getClass())) {
-            adapter.prepareViewForReuse(marker, convertView);
-            adapter.releaseView(convertView);
-            marker.setMapboxMap(null);
-            iterator.remove();
+        // remove old markers
+        Iterator<MarkerView> iterator = markerViewMap.keySet().iterator();
+        while (iterator.hasNext()) {
+          MarkerView marker = iterator.next();
+          if (!markers.contains(marker)) {
+            // remove marker
+            convertView = markerViewMap.get(marker);
+            for (MapboxMap.MarkerViewAdapter adapter : markerViewAdapters) {
+              if (adapter.getMarkerClass().equals(marker.getClass())) {
+                adapter.prepareViewForReuse(marker, convertView);
+                adapter.releaseView(convertView);
+                marker.setMapboxMap(null);
+                iterator.remove();
+              }
+            }
           }
         }
-      }
-    }
 
-    // introduce new markers
-    for (final MarkerView marker : markers) {
-      if (!markerViewMap.containsKey(marker)) {
-        for (final MapboxMap.MarkerViewAdapter adapter : markerViewAdapters) {
-          if (adapter.getMarkerClass().equals(marker.getClass())) {
+        // introduce new markers
+        for (final MarkerView marker : markers) {
+          if (!markerViewMap.containsKey(marker)) {
+            for (final MapboxMap.MarkerViewAdapter adapter : markerViewAdapters) {
+              if (adapter.getMarkerClass().equals(marker.getClass())) {
 
-            // Inflate View
-            convertView = (View) adapter.getViewReusePool().acquire();
-            final View adaptedView = adapter.getView(marker, convertView, markerViewContainer);
-            if (adaptedView != null) {
-              adaptedView.setRotationX(marker.getTilt());
-              adaptedView.setRotation(marker.getRotation());
-              adaptedView.setAlpha(marker.getAlpha());
-              adaptedView.setVisibility(View.GONE);
+                // Inflate View
+                convertView = (View) adapter.getViewReusePool().acquire();
+                final View adaptedView = adapter.getView(marker, convertView, markerViewContainer);
+                if (adaptedView != null) {
+                  adaptedView.setRotationX(marker.getTilt());
+                  adaptedView.setRotation(marker.getRotation());
+                  adaptedView.setAlpha(marker.getAlpha());
+                  adaptedView.setVisibility(View.GONE);
 
-              if (mapboxMap.getSelectedMarkers().contains(marker)) {
-                // if a marker to be shown was selected
-                // replay that animation with duration 0
-                if (adapter.onSelect(marker, adaptedView, true)) {
-                  mapboxMap.selectMarker(marker);
+                  if (mapboxMap.getSelectedMarkers().contains(marker)) {
+                    // if a marker to be shown was selected
+                    // replay that animation with duration 0
+                    if (adapter.onSelect(marker, adaptedView, true)) {
+                      mapboxMap.selectMarker(marker);
+                    }
+                  }
+
+                  marker.setMapboxMap(mapboxMap);
+                  markerViewMap.put(marker, adaptedView);
+                  if (convertView == null) {
+                    adaptedView.setVisibility(View.GONE);
+                    markerViewContainer.addView(adaptedView);
+                  }
+                }
+
+                // notify listener is marker view is rendered
+                OnMarkerViewAddedListener onViewAddedListener = markerViewAddedListenerMap.get(marker.getId());
+                if (onViewAddedListener != null) {
+                  onViewAddedListener.onViewAdded(marker);
+                  markerViewAddedListenerMap.remove(marker.getId());
                 }
               }
-
-              marker.setMapboxMap(mapboxMap);
-              markerViewMap.put(marker, adaptedView);
-              if (convertView == null) {
-                adaptedView.setVisibility(View.GONE);
-                markerViewContainer.addView(adaptedView);
-              }
-            }
-
-            // notify listener is marker view is rendered
-            OnMarkerViewAddedListener onViewAddedListener = markerViewAddedListenerMap.get(marker.getId());
-            if (onViewAddedListener != null) {
-              onViewAddedListener.onViewAdded(marker);
-              markerViewAddedListenerMap.remove(marker.getId());
             }
           }
         }
+
+        // clear map, don't keep references to MarkerView listeners that are not found in the bounds of the map.
+        markerViewAddedListenerMap.clear();
+
+        // trigger update to make newly added ViewMarker visible,
+        // these would only be updated when the map is moved.
+        updateMarkerViewsPosition();
       }
-    }
-
-    // clear map, don't keep references to MarkerView listeners that are not found in the bounds of the map.
-    markerViewAddedListenerMap.clear();
-
-    // trigger update to make newly added ViewMarker visible,
-    // these would only be updated when the map is moved.
-    updateMarkerViewsPosition();
+    });
   }
 
   /**
