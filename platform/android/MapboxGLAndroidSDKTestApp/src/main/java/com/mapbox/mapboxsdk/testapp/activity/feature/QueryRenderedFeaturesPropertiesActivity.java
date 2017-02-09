@@ -57,30 +57,34 @@ public class QueryRenderedFeaturesPropertiesActivity extends AppCompatActivity {
         // Add a click listener
         mapboxMap.setOnMapClickListener(new MapboxMap.OnMapClickListener() {
           @Override
-          public void onMapClick(@NonNull LatLng point) {
-            // Query
-            final PointF pixel = mapboxMap.getProjection().toScreenLocation(point);
-            Timber.i(String.format(
-              "Requesting features for %sx%s (%sx%s adjusted for density)",
-              pixel.x, pixel.y, pixel.x / density, pixel.y / density)
-            );
-            List<Feature> features = mapboxMap.queryRenderedFeatures(pixel);
-
-            // Debug output
-            debugOutput(features);
-
-            // Remove any previous markers
-            if (marker != null) {
-              mapboxMap.removeMarker(marker);
-            }
-
-            // Add a marker on the clicked point
-            mapboxMap.addMarker(new CustomMarkerOptions().position(point).features(features), new ResultListener<Marker>() {
+          public void onMapClick(@NonNull final LatLng point) {
+            mapboxMap.getProjection().toScreenLocation(point, new ResultListener<PointF>() {
               @Override
-              public void onResult(Marker marker) {
-                mapboxMap.selectMarker(marker);
+              public void onResult(final PointF pixel) {
+                Timber.i(String.format(
+                  "Requesting features for %sx%s (%sx%s adjusted for density)",
+                  pixel.x, pixel.y, pixel.x / density, pixel.y / density)
+                );
+                List<Feature> features = mapboxMap.queryRenderedFeatures(pixel);
+
+                // Debug output
+                debugOutput(features);
+
+                // Remove any previous markers
+                if (marker != null) {
+                  mapboxMap.removeMarker(marker);
+                }
+
+                // Add a marker on the clicked point
+                mapboxMap.addMarker(new CustomMarkerOptions().position(point).features(features), new ResultListener<Marker>() {
+                  @Override
+                  public void onResult(Marker marker) {
+                    mapboxMap.selectMarker(marker);
+                  }
+                });
               }
             });
+
           }
         });
       }

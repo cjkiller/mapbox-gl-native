@@ -48,23 +48,26 @@ public class PressForMarkerActivity extends AppCompatActivity {
 
         mapboxMap.setOnMapLongClickListener(new MapboxMap.OnMapLongClickListener() {
           @Override
-          public void onMapLongClick(@NonNull LatLng point) {
-            final PointF pixel = mapboxMap.getProjection().toScreenLocation(point);
-
-            String title = LAT_LON_FORMATTER.format(point.getLatitude()) + ", "
-              + LAT_LON_FORMATTER.format(point.getLongitude());
-            String snippet = "X = " + (int) pixel.x + ", Y = " + (int) pixel.y;
-
-            MarkerOptions marker = new MarkerOptions()
-              .position(point)
-              .title(title)
-              .snippet(snippet);
-
-            markerList.add(marker);
-            mapboxMap.addMarker(marker, new ResultListener<Marker>() {
+          public void onMapLongClick(@NonNull final LatLng point) {
+            mapboxMap.getProjection().toScreenLocation(point, new ResultListener<PointF>() {
               @Override
-              public void onResult(Marker marker) {
-                Timber.i("Marker added");
+              public void onResult(PointF pixel) {
+                String title = LAT_LON_FORMATTER.format(point.getLatitude()) + ", "
+                  + LAT_LON_FORMATTER.format(point.getLongitude());
+                String snippet = "X = " + (int) pixel.x + ", Y = " + (int) pixel.y;
+
+                MarkerOptions marker = new MarkerOptions()
+                  .position(point)
+                  .title(title)
+                  .snippet(snippet);
+
+                markerList.add(marker);
+                mapboxMap.addMarker(marker, new ResultListener<Marker>() {
+                  @Override
+                  public void onResult(Marker marker) {
+                    Timber.i("Marker added");
+                  }
+                });
               }
             });
           }

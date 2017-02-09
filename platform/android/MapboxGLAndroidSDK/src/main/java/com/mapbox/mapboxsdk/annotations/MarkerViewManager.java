@@ -170,30 +170,34 @@ public class MarkerViewManager implements MapView.OnMapChangedListener {
     for (final MarkerView marker : markerViewMap.keySet()) {
       final View convertView = markerViewMap.get(marker);
       if (convertView != null) {
-        PointF point = mapboxMap.getProjection().toScreenLocation(marker.getPosition());
-        if (marker.getOffsetX() == MapboxConstants.UNMEASURED) {
-          // ensure view is measured first
-          if (marker.getWidth() == 0) {
-            convertView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
-            if (convertView.getMeasuredWidth() != 0) {
-              marker.setWidth(convertView.getMeasuredWidth());
-              marker.setHeight(convertView.getMeasuredHeight());
+        mapboxMap.getProjection().toScreenLocation(marker.getPosition(), new ResultListener<PointF>() {
+          @Override
+          public void onResult(PointF point) {
+            if (marker.getOffsetX() == MapboxConstants.UNMEASURED) {
+              // ensure view is measured first
+              if (marker.getWidth() == 0) {
+                convertView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+                if (convertView.getMeasuredWidth() != 0) {
+                  marker.setWidth(convertView.getMeasuredWidth());
+                  marker.setHeight(convertView.getMeasuredHeight());
+                }
+              }
+            }
+            if (marker.getWidth() != 0) {
+              int x = (int) (marker.getAnchorU() * marker.getWidth());
+              int y = (int) (marker.getAnchorV() * marker.getHeight());
+              marker.setOffset(x, y);
+            }
+
+            convertView.setX(point.x - marker.getOffsetX());
+            convertView.setY(point.y - marker.getOffsetY());
+
+            // animate visibility
+            if (marker.isVisible() && convertView.getVisibility() == View.GONE) {
+              animateVisible(marker, true);
             }
           }
-        }
-        if (marker.getWidth() != 0) {
-          int x = (int) (marker.getAnchorU() * marker.getWidth());
-          int y = (int) (marker.getAnchorV() * marker.getHeight());
-          marker.setOffset(x, y);
-        }
-
-        convertView.setX(point.x - marker.getOffsetX());
-        convertView.setY(point.y - marker.getOffsetY());
-
-        // animate visibility
-        if (marker.isVisible() && convertView.getVisibility() == View.GONE) {
-          animateVisible(marker, true);
-        }
+        });
       }
     }
   }

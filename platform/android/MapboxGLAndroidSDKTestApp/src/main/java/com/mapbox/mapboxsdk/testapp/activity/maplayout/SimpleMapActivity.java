@@ -3,8 +3,13 @@ package com.mapbox.mapboxsdk.testapp.activity.maplayout;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 
+import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.maps.MapView;
+import com.mapbox.mapboxsdk.maps.MapboxMap;
+import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
 import com.mapbox.mapboxsdk.testapp.R;
+
+import timber.log.Timber;
 
 public class SimpleMapActivity extends AppCompatActivity {
 
@@ -17,6 +22,17 @@ public class SimpleMapActivity extends AppCompatActivity {
 
     mapView = (MapView) findViewById(R.id.mapView);
     mapView.onCreate(savedInstanceState);
+    mapView.getMapAsync(new OnMapReadyCallback() {
+      @Override
+      public void onMapReady(MapboxMap mapboxMap) {
+        mapboxMap.setOnCameraChangeListener(new MapboxMap.OnCameraChangeListener() {
+          @Override
+          public void onCameraChange(CameraPosition position) {
+            Timber.i("HELLO" + position.toString());
+          }
+        });
+      }
+    });
   }
 
   @Override

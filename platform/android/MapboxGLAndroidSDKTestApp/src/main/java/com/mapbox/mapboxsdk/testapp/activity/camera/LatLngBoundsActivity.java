@@ -9,6 +9,7 @@ import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
 import com.mapbox.mapboxsdk.constants.Style;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.geometry.LatLngBounds;
+import com.mapbox.mapboxsdk.geometry.VisibleRegion;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
@@ -85,7 +86,12 @@ public class LatLngBoundsActivity extends AppCompatActivity implements OnMapRead
 
     // Log data
     Timber.e("Move to bounds: " + bounds.toString());
-    Timber.e("Resulting bounds:" + mapboxMap.getProjection().getVisibleRegion().latLngBounds.toString());
+    mapboxMap.getProjection().getVisibleRegion(new ResultListener<VisibleRegion>() {
+      @Override
+      public void onResult(VisibleRegion visibleRegion) {
+        Timber.e("Resulting bounds:" + visibleRegion.latLngBounds.toString());
+      }
+    });
   }
 
   @Override

@@ -95,17 +95,21 @@ public class SymbolLayerActivity extends AppCompatActivity implements MapboxMap.
   @Override
   public void onMapClick(@NonNull LatLng point) {
     // Query which features are clicked
-    PointF screenLoc = mapboxMap.getProjection().toScreenLocation(point);
-    final List<Feature> features = mapboxMap.queryRenderedFeatures(screenLoc, MARKER_LAYER);
-    mapboxMap.getLayerAs(MARKER_LAYER, new ResultListener.LayerResultListener<SymbolLayer>() {
+    mapboxMap.getProjection().toScreenLocation(point, new ResultListener<PointF>() {
       @Override
-      public void onResult(SymbolLayer layer) {
-        if (features.size() == 0) {
-          // Reset
-          layer.setProperties(iconSize(1f));
-        } else {
-          layer.setProperties(iconSize(3f));
-        }
+      public void onResult(PointF pointF) {
+        final List<Feature> features = mapboxMap.queryRenderedFeatures(pointF, MARKER_LAYER);
+        mapboxMap.getLayerAs(MARKER_LAYER, new ResultListener.LayerResultListener<SymbolLayer>() {
+          @Override
+          public void onResult(SymbolLayer layer) {
+            if (features.size() == 0) {
+              // Reset
+              layer.setProperties(iconSize(1f));
+            } else {
+              layer.setProperties(iconSize(3f));
+            }
+          }
+        });
       }
     });
   }

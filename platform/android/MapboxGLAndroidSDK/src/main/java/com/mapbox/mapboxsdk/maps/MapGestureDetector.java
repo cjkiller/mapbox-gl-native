@@ -15,6 +15,7 @@ import com.almeros.android.multitouch.gesturedetectors.RotateGestureDetector;
 import com.almeros.android.multitouch.gesturedetectors.ShoveGestureDetector;
 import com.almeros.android.multitouch.gesturedetectors.TwoFingerGestureDetector;
 import com.mapbox.mapboxsdk.constants.MapboxConstants;
+import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.telemetry.MapboxEvent;
 import com.mapbox.mapboxsdk.utils.MathUtils;
 
@@ -277,7 +278,12 @@ final class MapGestureDetector {
 
         // notify app of map click
         if (onMapClickListener != null) {
-          onMapClickListener.onMapClick(projection.fromScreenLocation(tapPoint));
+          projection.fromScreenLocation(tapPoint, new ResultListener<LatLng>() {
+            @Override
+            public void onResult(LatLng latLng) {
+              onMapClickListener.onMapClick(latLng);
+            }
+          });
         }
       }
 
@@ -289,8 +295,14 @@ final class MapGestureDetector {
     @Override
     public void onLongPress(MotionEvent motionEvent) {
       if (onMapLongClickListener != null && !quickZoom) {
-        onMapLongClickListener.onMapLongClick(
-          projection.fromScreenLocation(new PointF(motionEvent.getX(), motionEvent.getY())));
+        projection.fromScreenLocation(new PointF(motionEvent.getX(), motionEvent.getY()), new ResultListener<LatLng>() {
+          @Override
+          public void onResult(LatLng latLng) {
+            if (onMapLongClickListener != null) {
+              onMapLongClickListener.onMapLongClick(latLng);
+            }
+          }
+        });
       }
     }
 

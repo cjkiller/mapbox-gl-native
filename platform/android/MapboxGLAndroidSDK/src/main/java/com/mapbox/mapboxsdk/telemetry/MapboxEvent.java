@@ -5,6 +5,7 @@ import android.support.annotation.NonNull;
 
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.maps.Projection;
+import com.mapbox.mapboxsdk.maps.ResultListener;
 
 import java.io.Serializable;
 import java.util.Hashtable;
@@ -89,30 +90,33 @@ public class MapboxEvent implements Serializable {
    * @param yCoordinate Original y screen cooridnate at start of gesture
    * @param zoom        Zoom level to be registered
    */
-  public static void trackGestureEvent(@NonNull Projection projection, @NonNull String gestureId, float xCoordinate,
-                                       float yCoordinate, double zoom) {
-    LatLng tapLatLng = projection.fromScreenLocation(new PointF(xCoordinate, yCoordinate));
+  public static void trackGestureEvent(@NonNull Projection projection, @NonNull final String gestureId,
+                                       final float xCoordinate, final float yCoordinate, final double zoom) {
+    projection.fromScreenLocation(new PointF(xCoordinate, yCoordinate), new ResultListener<LatLng>() {
+      @Override
+      public void onResult(LatLng tapLatLng) {
+        // NaN and Infinite checks to prevent JSON errors at send to server time
+        if (Double.isNaN(tapLatLng.getLatitude()) || Double.isNaN(tapLatLng.getLongitude())) {
+          Timber.d("trackGestureEvent() has a NaN lat or lon.  Returning.");
+          return;
+        }
 
-    // NaN and Infinite checks to prevent JSON errors at send to server time
-    if (Double.isNaN(tapLatLng.getLatitude()) || Double.isNaN(tapLatLng.getLongitude())) {
-      Timber.d("trackGestureEvent() has a NaN lat or lon.  Returning.");
-      return;
-    }
+        if (Double.isInfinite(tapLatLng.getLatitude()) || Double.isInfinite(tapLatLng.getLongitude())) {
+          Timber.d("trackGestureEvent() has an Infinite lat or lon.  Returning.");
+          return;
+        }
 
-    if (Double.isInfinite(tapLatLng.getLatitude()) || Double.isInfinite(tapLatLng.getLongitude())) {
-      Timber.d("trackGestureEvent() has an Infinite lat or lon.  Returning.");
-      return;
-    }
+        Hashtable<String, Object> evt = new Hashtable<>();
+        evt.put(MapboxEvent.ATTRIBUTE_EVENT, MapboxEvent.TYPE_MAP_CLICK);
+        evt.put(MapboxEvent.ATTRIBUTE_CREATED, MapboxEventManager.generateCreateDate());
+        evt.put(MapboxEvent.KEY_GESTURE_ID, gestureId);
+        evt.put(MapboxEvent.KEY_LATITUDE, tapLatLng.getLatitude());
+        evt.put(MapboxEvent.KEY_LONGITUDE, tapLatLng.getLongitude());
+        evt.put(MapboxEvent.KEY_ZOOM, zoom);
 
-    Hashtable<String, Object> evt = new Hashtable<>();
-    evt.put(MapboxEvent.ATTRIBUTE_EVENT, MapboxEvent.TYPE_MAP_CLICK);
-    evt.put(MapboxEvent.ATTRIBUTE_CREATED, MapboxEventManager.generateCreateDate());
-    evt.put(MapboxEvent.KEY_GESTURE_ID, gestureId);
-    evt.put(MapboxEvent.KEY_LATITUDE, tapLatLng.getLatitude());
-    evt.put(MapboxEvent.KEY_LONGITUDE, tapLatLng.getLongitude());
-    evt.put(MapboxEvent.KEY_ZOOM, zoom);
-
-    MapboxEventManager.getMapboxEventManager().pushEvent(evt);
+        MapboxEventManager.getMapboxEventManager().pushEvent(evt);
+      }
+    });
   }
 
   /**
@@ -124,29 +128,33 @@ public class MapboxEvent implements Serializable {
    * @param yCoordinate Orginal y screen coordinate at end of drag
    * @param zoom        Zoom level to be registered
    */
-  public static void trackGestureDragEndEvent(@NonNull Projection projection, float xCoordinate, float yCoordinate,
-                                              double zoom) {
-    LatLng tapLatLng = projection.fromScreenLocation(new PointF(xCoordinate, yCoordinate));
+  public static void trackGestureDragEndEvent(@NonNull Projection projection, final float xCoordinate,
+                                              final float yCoordinate, final double zoom) {
+    projection.fromScreenLocation(new PointF(xCoordinate, yCoordinate), new ResultListener<LatLng>() {
+      @Override
+      public void onResult(LatLng tapLatLng) {
+        // NaN and Infinite checks to prevent JSON errors at send to server time
+        if (Double.isNaN(tapLatLng.getLatitude()) || Double.isNaN(tapLatLng.getLongitude())) {
+          Timber.d("trackGestureDragEndEvent() has a NaN lat or lon.  Returning.");
+          return;
+        }
 
-    // NaN and Infinite checks to prevent JSON errors at send to server time
-    if (Double.isNaN(tapLatLng.getLatitude()) || Double.isNaN(tapLatLng.getLongitude())) {
-      Timber.d("trackGestureDragEndEvent() has a NaN lat or lon.  Returning.");
-      return;
-    }
+        if (Double.isInfinite(tapLatLng.getLatitude()) || Double.isInfinite(tapLatLng.getLongitude())) {
+          Timber.d("trackGestureDragEndEvent() has an Infinite lat or lon.  Returning.");
+          return;
+        }
 
-    if (Double.isInfinite(tapLatLng.getLatitude()) || Double.isInfinite(tapLatLng.getLongitude())) {
-      Timber.d("trackGestureDragEndEvent() has an Infinite lat or lon.  Returning.");
-      return;
-    }
+        Hashtable<String, Object> evt = new Hashtable<>();
+        evt.put(MapboxEvent.ATTRIBUTE_EVENT, MapboxEvent.TYPE_MAP_DRAGEND);
+        evt.put(MapboxEvent.ATTRIBUTE_CREATED, MapboxEventManager.generateCreateDate());
+        evt.put(MapboxEvent.KEY_LATITUDE, tapLatLng.getLatitude());
+        evt.put(MapboxEvent.KEY_LONGITUDE, tapLatLng.getLongitude());
+        evt.put(MapboxEvent.KEY_ZOOM, zoom);
 
-    Hashtable<String, Object> evt = new Hashtable<>();
-    evt.put(MapboxEvent.ATTRIBUTE_EVENT, MapboxEvent.TYPE_MAP_DRAGEND);
-    evt.put(MapboxEvent.ATTRIBUTE_CREATED, MapboxEventManager.generateCreateDate());
-    evt.put(MapboxEvent.KEY_LATITUDE, tapLatLng.getLatitude());
-    evt.put(MapboxEvent.KEY_LONGITUDE, tapLatLng.getLongitude());
-    evt.put(MapboxEvent.KEY_ZOOM, zoom);
+        MapboxEventManager.getMapboxEventManager().pushEvent(evt);
+      }
+    });
 
-    MapboxEventManager.getMapboxEventManager().pushEvent(evt);
   }
 
   /**

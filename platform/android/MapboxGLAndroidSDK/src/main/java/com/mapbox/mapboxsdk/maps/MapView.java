@@ -193,6 +193,10 @@ public class MapView extends FrameLayout {
   protected void onNativeMapViewReady() {
     mapState = new MapState(nativeMapView, glSurfaceView);
 
+    float width = getWidth();
+    float height = getHeight();
+    Timber.i("W-H %f %f", width, height);
+
     // callback for focal point invalidation
     FocalPointInvalidator focalPoint = new FocalPointInvalidator();
 
@@ -203,7 +207,7 @@ public class MapView extends FrameLayout {
     CameraZoomInvalidator zoomInvalidator = new CameraZoomInvalidator();
 
     // setup components for MapboxMap creation
-    Projection proj = new Projection(nativeMapView);
+    Projection proj = new Projection(mapState, width, height);
     UiSettings uiSettings = new UiSettings(proj, focalPoint, compassView, attrView, logoView);
     TrackingSettings trackingSettings = new TrackingSettings(myLocationView, uiSettings, focalPoint, zoomInvalidator);
     MyLocationViewSettings myLocationViewSettings = new MyLocationViewSettings(myLocationView, proj, focalPoint);

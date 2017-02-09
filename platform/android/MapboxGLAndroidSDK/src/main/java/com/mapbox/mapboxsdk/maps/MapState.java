@@ -62,7 +62,7 @@ class MapState extends State {
   }
 
   @UiThread
-  void cycleDebugOptions(){
+  void cycleDebugOptions() {
     queueRenderEvent(new NativeMapRunnable() {
       @Override
       public void execute(@NonNull NativeMapView nativeMapView) {
@@ -81,7 +81,7 @@ class MapState extends State {
   @UiThread
   void onRestoreInstanceState(Bundle savedInstanceState) {
     boolean debug = savedInstanceState.getBoolean(MapboxConstants.STATE_DEBUG_ACTIVE);
-    if(debug){
+    if (debug) {
       setDebug(debug);
     }
 

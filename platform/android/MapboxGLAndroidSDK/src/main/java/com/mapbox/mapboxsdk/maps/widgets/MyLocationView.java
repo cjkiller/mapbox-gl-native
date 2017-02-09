@@ -35,6 +35,7 @@ import com.mapbox.mapboxsdk.location.LocationListener;
 import com.mapbox.mapboxsdk.location.LocationServices;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.Projection;
+import com.mapbox.mapboxsdk.maps.ResultListener;
 
 import java.lang.ref.WeakReference;
 
@@ -58,6 +59,7 @@ public class MyLocationView extends View {
   private Location location;
   private long locationUpdateTimestamp;
   private float previousDirection;
+  private float metersPerPixel;
 
   private float accuracy;
   private Paint accuracyPaint;
@@ -254,7 +256,6 @@ public class MyLocationView extends View {
     }
 
     final PointF pointF = screenLocation;
-    float metersPerPixel = (float) projection.getMetersPerPixelAtLatitude(location.getLatitude());
     float accuracyPixels = (Float) accuracyAnimator.getAnimatedValue() / metersPerPixel / 2;
     float maxRadius = getWidth() / 2;
     accuracyPixels = accuracyPixels <= maxRadius ? accuracyPixels : maxRadius;
@@ -330,6 +331,15 @@ public class MyLocationView extends View {
     if (position != null) {
       setBearing(position.bearing);
       setTilt(position.tilt);
+    }
+
+    if (location != null) {
+      projection.getMetersPerPixelAtLatitude(location.getLatitude(), new ResultListener<Double>() {
+        @Override
+        public void onResult(Double aDouble) {
+          metersPerPixel = (float) aDouble.doubleValue();
+        }
+      });
     }
   }
 
@@ -827,9 +837,14 @@ public class MyLocationView extends View {
     @Override
     void invalidate() {
       if (latLng != null) {
-        screenLocation = projection.toScreenLocation(latLng);
+        projection.toScreenLocation(latLng, new ResultListener<PointF>() {
+          @Override
+          public void onResult(PointF pointF) {
+            screenLocation = pointF;
+            MyLocationView.this.invalidate();
+          }
+        });
       }
-      MyLocationView.this.invalidate();
     }
   }
 }

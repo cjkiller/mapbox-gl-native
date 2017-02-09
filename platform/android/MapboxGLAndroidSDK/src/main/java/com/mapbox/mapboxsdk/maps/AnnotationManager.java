@@ -482,7 +482,7 @@ class AnnotationManager extends State {
           idsList.add(id);
         }
 
-        List<MarkerView> annotations = new ArrayList<>(ids.length);
+        final List<MarkerView> annotations = new ArrayList<>(ids.length);
         List<Annotation> annotationList = getAnnotations();
         int count = annotationList.size();
         for (int i = 0; i < count; i++) {
@@ -493,7 +493,12 @@ class AnnotationManager extends State {
         }
 
         if (resultListener != null) {
-          resultListener.onResult(annotations);
+          queueUiEvent(new Runnable() {
+            @Override
+            public void run() {
+              resultListener.onResult(annotations);
+            }
+          });
         }
       }
     });
